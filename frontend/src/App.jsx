@@ -5,6 +5,7 @@ import {
 } from "recharts";
 import api from "./services/api";
 import Analytics from "./Analytics";
+import useWebSocket from "./useWebSocket";
 
 // ==========================
 // THEME TOKENS
@@ -125,7 +126,7 @@ function ChartSection({ history, dark, t, rangeIdx, setRangeIdx }) {
   const [activeTab, setActiveTab] = useState("temperature");
 
   const tabs = [
-    { key: "temperature", label: "🌡 Suhu",    unit: "°C",   thresholds: [] },
+    { key: "temperature", label: "🌡 Temperatur",    unit: "°C",   thresholds: [] },
     { key: "humidity",    label: "💧 Kelembapan",     unit: "%",    thresholds: [] },
     { key: "air_quality", label: "🌫 Kualitas Udara", unit: " ADC", thresholds: [
       { value: 1000, color: "#22c55e", label: "Baik"   },
@@ -151,8 +152,8 @@ function ChartSection({ history, dark, t, rangeIdx, setRangeIdx }) {
     <div style={{ ...styles.chartCard, backgroundColor: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
       <div style={styles.chartHeader}>
         <div>
-          <p style={{ ...styles.chartTitle, color: t.titleColor }}>📈 Grafik Historis</p>
-          <p style={{ ...styles.chartSub, color: t.subtitleColor }}>Perbandingan antar ruangan</p>
+          <p style={{ ...styles.chartTitle, color: t.titleColor }}>📈 Grafik Historis Sensor</p>
+          <p style={{ ...styles.chartSub, color: t.subtitleColor }}>Perbandingan antar ruangan secara real-time</p>
         </div>
         <div style={{ display: "flex", gap: "6px" }}>
           {TIME_RANGES.map((r, i) => (
@@ -256,6 +257,9 @@ function App() {
 
   const t = dark ? theme.dark : theme.light;
 
+  // ==========================
+  // Fetch initial data (sekali saat load)
+  // ==========================
   const getData = useCallback(async () => {
     try {
       const res = await api.get("/latest-all");
@@ -270,11 +274,9 @@ function App() {
     } catch (err) { console.log(err); }
   }, []);
 
-  // Auto refresh data live — TIDAK DIUBAH
+  // Load data awal saat pertama buka
   useEffect(() => {
     getData();
-    const interval = setInterval(getData, 3000);
-    return () => clearInterval(interval);
   }, [getData]);
 
   // History refresh tiap 30 detik
@@ -283,6 +285,28 @@ function App() {
     const interval = setInterval(() => getHistory(TIME_RANGES[rangeIdx].minutes), 30000);
     return () => clearInterval(interval);
   }, [getHistory, rangeIdx]);
+
+  // ==========================
+  // WebSocket — update real-time
+  // Menggantikan polling setInterval 3 detik
+  // ==========================
+  const handleWsMessage = useCallback((data) => {
+    if (data.type !== "sensor_update") return;
+
+    // Update rooms state dengan data terbaru dari node yang bersangkutan
+    setRooms(prev => {
+      const exists = prev.some(r => r.node_id === data.node_id);
+      if (exists) {
+        // Update node yang sudah ada
+        return prev.map(r => r.node_id === data.node_id ? { ...r, ...data } : r);
+      } else {
+        // Tambah node baru kalau belum ada
+        return [...prev, data];
+      }
+    });
+  }, []);
+
+  useWebSocket(handleWsMessage);
 
   if (rooms.length === 0) {
     return (
@@ -403,7 +427,7 @@ function App() {
                   {/* Sensor Grid */}
                   <div style={styles.sensorGrid}>
                     <div style={{ ...styles.sensorCard, backgroundColor: t.sensorCardBg, border: `1px solid ${t.sensorBorder}` }}>
-                      <p style={{ ...styles.sensorLabel, color: t.sensorLabel }}>🌡 Suhu</p>
+                      <p style={{ ...styles.sensorLabel, color: t.sensorLabel }}>🌡 Temperatur</p>
                       <p style={{ ...styles.sensorValue, color: tempColor }}>{data.temperature.toFixed(1)} °C</p>
                     </div>
                     <div style={{ ...styles.sensorCard, backgroundColor: t.sensorCardBg, border: `1px solid ${t.sensorBorder}` }}>
