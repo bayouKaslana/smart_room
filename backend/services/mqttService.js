@@ -66,7 +66,7 @@ client.on("message", async (topic, message) => {
     // yang sedang terbuka
     // ==========================
     try {
-      const { broadcast } = require("../app");
+      const { broadcast } = require("../server");
       broadcast({
         type       : "sensor_update",
         node_id    : data.node_id,

@@ -152,7 +152,7 @@ function ChartSection({ history, dark, t, rangeIdx, setRangeIdx }) {
     <div style={{ ...styles.chartCard, backgroundColor: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
       <div style={styles.chartHeader}>
         <div>
-          <p style={{ ...styles.chartTitle, color: t.titleColor }}>📈 Grafik Historis Sensor</p>
+          <p style={{ ...styles.chartTitle, color: t.titleColor }}>📈 Grafik Historis</p>
           <p style={{ ...styles.chartSub, color: t.subtitleColor }}>Perbandingan antar ruangan secara real-time</p>
         </div>
         <div style={{ display: "flex", gap: "6px" }}>
@@ -254,6 +254,7 @@ function App() {
   const [dark,     setDark]     = useState(false);
   const [rangeIdx, setRangeIdx] = useState(0);
   const [page,     setPage]     = useState("dashboard");
+  const [selDate,  setSelDate]  = useState("");
 
   const t = dark ? theme.dark : theme.light;
 
@@ -363,7 +364,7 @@ function App() {
 
       {/* HALAMAN ANALITIK */}
       {page === "analytics" && (
-        <Analytics t={t} dark={dark} />
+        <Analytics t={t} dark={dark} selDate={selDate} setSelDate={setSelDate} />
       )}
 
       {/* HALAMAN DASHBOARD */}

@@ -168,12 +168,11 @@ function AnomalyItem({ item, t }) {
 // ==========================
 // ANALYTICS PAGE
 // ==========================
-export default function Analytics({ t, dark }) {
+export default function Analytics({ t, dark, selDate, setSelDate }) {
 
   const [stats,     setStats]     = useState(null);
   const [anomalies, setAnomalies] = useState([]);
   const [loading,   setLoading]   = useState(true);
-  const [selDate,   setSelDate]   = useState("");
   const [anomalyFilter, setAnomalyFilter] = useState("all"); // all | temperature | humidity | air_quality
 
   // ==========================
@@ -184,7 +183,7 @@ export default function Analytics({ t, dark }) {
       const url = date ? `/stats?date=${date}` : "/stats";
       const res = await api.get(url);
       setStats(res.data);
-      if (!date) setSelDate(res.data.date);
+      if (!date && !selDate) setSelDate(res.data.date);
     } catch (err) {
       console.log(err);
     }
@@ -203,14 +202,16 @@ export default function Analytics({ t, dark }) {
   }, []);
 
   useEffect(() => {
-    Promise.all([fetchStats(), fetchAnomalies()])
+    // Kalau selDate sudah ada (dari props), langsung pakai
+    // Kalau belum, fetchStats akan set selDate ke tanggal terbaru
+    Promise.all([fetchStats(selDate || ""), fetchAnomalies()])
       .finally(() => setLoading(false));
-  }, [fetchStats, fetchAnomalies]);
+  }, []); // hanya run sekali saat mount
 
-  // Re-fetch stats saat tanggal berubah
+  // Re-fetch stats saat tanggal berubah oleh user
   useEffect(() => {
     if (selDate) fetchStats(selDate);
-  }, [selDate, fetchStats]);
+  }, [selDate]);
 
   // ==========================
   // Filtered Anomalies
@@ -245,7 +246,7 @@ export default function Analytics({ t, dark }) {
               📊 Statistik Harian
             </h2>
             <p style={{ fontSize: "12px", color: t.subtitleColor, margin: "2px 0 0 0" }}>
-              Rata-rata, min & max suhu, kelembapan, dan kualitas udara per ruangan
+              Data Rata-rata, min & max per ruangan
             </p>
           </div>
 
@@ -338,7 +339,7 @@ export default function Analytics({ t, dark }) {
               🚨 Deteksi Anomali
             </h2>
             <p style={{ fontSize: "12px", color: t.subtitleColor, margin: "2px 0 0 0" }}>
-              Lonjakan nilai suhu, kelembapan, dan kualitas udara yang tidak wajar
+              Lonjakan nilai yang tidak wajar
             </p>
           </div>
 
