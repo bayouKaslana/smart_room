@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
 
-const WS_URL = `ws://${window.location.hostname}:3000`;
+const WS_URL = `ws://${window.location.hostname}/ws`;
 
 // ==========================
 // Custom Hook — useWebSocket

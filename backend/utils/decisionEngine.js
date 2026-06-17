@@ -26,7 +26,7 @@ module.exports = (data) => {
 
   // 5 menit
   const timeout =
-    5 * 60 * 1000;
+    1 * 60 * 1000;
 
   // Power Saving Mode
 

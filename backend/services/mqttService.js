@@ -6,7 +6,7 @@ require("dotenv").config();
 const client = mqtt.connect({
   host: process.env.MQTT_HOST,
   port: process.env.MQTT_PORT,
-  protocol: "mqtts",
+  protocol: "mqtt",
   username: process.env.MQTT_USER,
   password: process.env.MQTT_PASS,
   rejectUnauthorized: false
@@ -14,14 +14,57 @@ const client = mqtt.connect({
 
 client.on("connect", () => {
   console.log("MQTT Connected (HiveMQ) ✅");
+
+  // Subscribe data sensor
   client.subscribe("room/+/data", () => {
-    console.log("Subscribed!");
+    console.log("Subscribed to room/+/data ✅");
+  });
+
+  // Subscribe status Online/Offline (Last Will)
+  client.subscribe("room/+/status", () => {
+    console.log("Subscribed to room/+/status ✅");
   });
 });
 
 client.on("message", async (topic, message) => {
   try {
+
+    // ==========================
+    // Ekstrak node_id dan tipe topik
+    // ==========================
+    const topicParts = topic.split("/");
+    const node_id    = topicParts[1];
+    const topicType  = topicParts[2];
+
+    // ==========================
+    // Handle Status Online/Offline (Last Will)
+    // ==========================
+    if (topicType === "status") {
+      const status = message.toString(); // "online" atau "offline"
+      console.log(`Status ${node_id}: ${status}`);
+
+      try {
+        const { broadcast } = require("../server");
+        broadcast({
+          type   : "node_status",
+          node_id: node_id,
+          status : status,
+        });
+      } catch (wsErr) {
+        console.log("WebSocket broadcast skip:", wsErr.message);
+      }
+      return; // Tidak perlu proses lebih lanjut
+    }
+
     const data = JSON.parse(message.toString());
+
+    // ==========================
+    // Ekstrak node_id dari topik
+    // "room/node1/data" → "node1"
+    // Tidak perlu lagi dari payload JSON
+    // ==========================
+    data.node_id = node_id;
+
     console.log("Data masuk:", data);
 
     // ==========================

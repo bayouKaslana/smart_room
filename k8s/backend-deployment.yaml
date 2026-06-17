@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: backend
+        image: smart-room-backend
+        imagePullPolicy: Never
+        env:
+        - name: DB_HOST
+          value: "mysql-service"
+        - name: DB_USER
+          value: "smartroom"
+        - name: DB_PASS
+          value: "smartroom123"
+        - name: DB_NAME
+          value: "smart_room"
+        - name: MQTT_HOST
+          value: "192.168.56.10"
+        - name: MQTT_PORT
+          value: "1883"
+        - name: PORT
+          value: "3000"
+        ports:
+        - containerPort: 3000

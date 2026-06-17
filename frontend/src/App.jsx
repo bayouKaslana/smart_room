@@ -238,14 +238,6 @@ function ChartSection({ history, dark, t, rangeIdx, setRangeIdx }) {
 }
 
 // ==========================
-// Node Online Check
-// ==========================
-function isNodeOnline(createdAt) {
-  if (!createdAt) return false;
-  return Date.now() - new Date(createdAt).getTime() < 60 * 1000;
-}
-
-// ==========================
 // APP
 // ==========================
 function App() {
@@ -255,6 +247,7 @@ function App() {
   const [rangeIdx, setRangeIdx] = useState(0);
   const [page,     setPage]     = useState("dashboard");
   const [selDate,  setSelDate]  = useState("");
+  const [nodeStatus, setNodeStatus] = useState({});
 
   const t = dark ? theme.dark : theme.light;
 
@@ -292,6 +285,16 @@ function App() {
   // Menggantikan polling setInterval 3 detik
   // ==========================
   const handleWsMessage = useCallback((data) => {
+
+    // Handle status Online/Offline dari Last Will MQTT
+    if (data.type === "node_status") {
+      setNodeStatus(prev => ({
+        ...prev,
+        [data.node_id]: data.status, // "online" atau "offline"
+      }));
+      return;
+    }
+
     if (data.type !== "sensor_update") return;
 
     // Update rooms state dengan data terbaru dari node yang bersangkutan
@@ -397,15 +400,16 @@ function App() {
                 airQualitySub    = "CO₂ ≥ 1800 ppm";
               }
 
-              const modeIsNormal   = (data.mode || "NORMAL") === "NORMAL";
-              const modeBg         = modeIsNormal ? (dark ? "#14532d" : "#dcfce7") : (dark ? "#422006" : "#fef9c3");
-              const modeColor      = modeIsNormal ? (dark ? "#86efac" : "#15803d") : (dark ? "#fcd34d" : "#92400e");
-              const tempColor      = dark ? "#60a5fa" : "#2563eb";
-              const fanOnColor     = dark ? "#4ade80" : "#16a34a";
-              const fanOffColor    = dark ? "#f87171" : "#dc2626";
-              const online         = isNodeOnline(data.created_at);
-              const nodeDotColor   = online ? "#22c55e" : "#ef4444";
-              const nodeStatusLabel = online ? "Online" : "Offline";
+              const modeIsNormal      = (data.mode || "NORMAL") === "NORMAL";
+              const modeBg            = modeIsNormal ? (dark ? "#14532d" : "#dcfce7") : (dark ? "#422006" : "#fef9c3");
+              const modeColor         = modeIsNormal ? (dark ? "#86efac" : "#15803d") : (dark ? "#fcd34d" : "#92400e");
+              const tempColor         = dark ? "#60a5fa" : "#2563eb";
+              const fanOnColor        = dark ? "#4ade80" : "#16a34a";
+              const fanOffColor       = dark ? "#f87171" : "#dc2626";
+              const onlineStr         = nodeStatus[data.node_id] || "offline";
+              const online	      = onlineStr === "online"
+              const nodeDotColor      = online ? "#22c55e" : "#ef4444";
+              const nodeStatusLabel   = online ? "Online" : "Offline";
 
               return (
                 <div key={index} style={{ ...styles.roomCard, backgroundColor: t.cardBg, border: `1px solid ${t.cardBorder}` }}>
